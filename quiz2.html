@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英単語 四択クイズ</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .choice {
+            display: block;
+            padding: 10px;
+            margin: 8px 0;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .choice:hover {
+            background: #dcdcdc;
+        }
+        #result {
+            font-size: 1.4em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>英単語 四択クイズ</h1>
+<div id="quiz-box">読み込み中...</div>
+<div id="result"></div>
+
+<script>
+    // ▼ CSV を読み込む関数
+    async function loadCSV() {
+        const res = await fetch("data/words.csv");
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+
+        // 1行目はヘッダ → 2行目からデータ
+        return lines.slice(1).map(line => {
+            const [word, opt1, opt2, opt3, correct] = line.split(",");
+            return {
+                word,
+                options: shuffle([opt1, opt2, opt3, correct]),
+                correct
+            };
+        });
+    }
+
+    // ▼ 配列をシャッフル
+    function shuffle(arr) {
+        return arr.sort(() => Math.random() - 0.5);
+    }
+
+    let quizData = [];
+    let current;
+
+    // ▼ クイズを1問出す
+    function showQuiz() {
+        const box = document.getElementById("quiz-box");
+        document.getElementById("result").textContent = "";
+
+        current = quizData[Math.floor(Math.random() * quizData.length)];
+
+        box.innerHTML = `
+            <h2>${current.word}</h2>
+            ${current.options.map(opt =>
+                `<div class='choice' onclick='checkAnswer("${opt}")'>${opt}</div>`
+            ).join("")}
+        `;
+    }
+
+    // ▼ 答えチェック
+    function checkAnswer(selected) {
+        const result = document.getElementById("result");
+        if (selected === current.correct) {
+            result.textContent = "正解！";
+            result.style.color = "green";
+        } else {
+            result.textContent = `不正解… 正解は「${current.correct}」`;
+            result.style.color = "red";
+        }
+
+        setTimeout(showQuiz, 1500); // 1.5秒後に次へ
+    }
+
+    // ▼ 初期化
+    (async () => {
+        quizData = await loadCSV();
+        showQuiz();
+    })();
+</script>
+
+</body>
+</html>
